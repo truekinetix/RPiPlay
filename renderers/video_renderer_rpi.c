@@ -262,10 +262,10 @@ static int video_renderer_rpi_init_decoder(video_renderer_rpi_t *renderer) {
 		display_region.set = OMX_DISPLAY_SET_FULLSCREEN | OMX_DISPLAY_SET_NOASPECT | OMX_DISPLAY_SET_DEST_RECT | OMX_DISPLAY_SET_LAYER;
 		display_region.fullscreen = OMX_FALSE;
 		display_region.noaspect = renderer->config->noaspect;
-		display_region.dest_rect.x_offset  = (int)renderer->config->ox;
-		display_region.dest_rect.y_offset  = (int)renderer->config->oy;
-		display_region.dest_rect.width     = (int)renderer->config->width;
-		display_region.dest_rect.height    = (int)renderer->config->height;
+		display_region.dest_rect.x_offset  = renderer->config->ox;
+		display_region.dest_rect.y_offset  = renderer->config->oy;
+		display_region.dest_rect.width     = renderer->config->width;
+		display_region.dest_rect.height    = renderer->config->height;
     	display_region.layer = LAYER_VIDEO;
 	}
 
