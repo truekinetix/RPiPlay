@@ -189,6 +189,13 @@ int main(int argc, char *argv[]) {
     video_config.rotation = DEFAULT_ROTATE;
     video_config.flip = DEFAULT_FLIP;
     
+	video_config.fullscreen = true;
+	video_config.ox = 0;
+	video_config.oy = 0;
+	video_config.width = 0;
+	video_config.height = 0;
+	video_config.noaspect = true;
+
     audio_renderer_config_t audio_config;
     audio_config.device = DEFAULT_AUDIO_DEVICE;
     audio_config.low_latency = DEFAULT_LOW_LATENCY;
@@ -254,6 +261,44 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "Error: Unable to locate audio renderer \"%s\".\n", argv[i]);
                 exit(1);
             }
+        } else if (arg == "-ox") {
+            if (i == argc - 1) {
+				fprintf(stderr, "Error: You must supply the x offset of the window in pixels after the -ox argument.\n");
+                exit(1);		
+			}	
+			video_config.ox = atoi( argv[++i] );
+			video_config.fullscreen = false;  // setting ox turns fullscreen off
+        } else if (arg == "-oy") {
+            if (i == argc - 1) {
+				fprintf(stderr, "Error: You must supply the y offset of the window in pixels after the -oy argument.\n");
+                exit(1);		
+			}	
+			video_config.oy = atoi( argv[++i] );
+			video_config.fullscreen = false;  // setting oy turns fullscreen off
+        } else if (arg == "-width") {
+            if (i == argc - 1) {
+				fprintf(stderr, "Error: You must supply the width of the window in pixels after the -width argument.\n");
+                exit(1);		
+			}	
+			video_config.width = atoi( argv[++i] );	
+			video_config.fullscreen = false;  // setting width turns fullscreen off
+        } else if (arg == "-height") {
+            if (i == argc - 1) {
+				fprintf(stderr, "Error: You must supply the height of the window in pixels after the -height argument.\n");
+                exit(1);		
+			}	
+			video_config.height = atoi( argv[++i] );	
+			video_config.fullscreen = false;  // setting height turns fullscreen off
+        } else if (arg == "-noaspect") {
+            if (i == argc - 1) {
+				fprintf(stderr, "Error: You must supply the noaspect flag ( 0 = false ) after the -noaspect argument.\n");
+                exit(1);		
+			}	
+			int intNoaspect = atoi( argv[++i] );
+			video_config.noaspect = ( intNoaspect == 0 ) ? false : true;
+			if ( video_config.noaspect ) {
+				video_config.fullscreen = false;  // setting noaspect true turns fullscreen off
+			}
         } else if (arg == "-h" || arg == "-v") {
             print_info(argv[0]);
             exit(0);

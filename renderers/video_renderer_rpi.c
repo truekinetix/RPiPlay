@@ -253,13 +253,25 @@ static int video_renderer_rpi_init_decoder(video_renderer_rpi_t *renderer) {
     display_region.nSize = sizeof(OMX_CONFIG_DISPLAYREGIONTYPE);
     display_region.nVersion.nVersion = OMX_VERSION;
     display_region.nPortIndex = 90;
-    display_region.set = OMX_DISPLAY_SET_FULLSCREEN | OMX_DISPLAY_SET_LAYER;
-    display_region.fullscreen = OMX_TRUE;
-    display_region.layer = LAYER_VIDEO;
+
+	if ( renderer->config->fullscreen ) {
+		display_region.set = OMX_DISPLAY_SET_FULLSCREEN | OMX_DISPLAY_SET_LAYER;
+		display_region.fullscreen = OMX_TRUE;
+		display_region.layer = LAYER_VIDEO;
+	} else {
+		display_region.set = OMX_DISPLAY_SET_FULLSCREEN | OMX_DISPLAY_SET_NOASPECT | OMX_DISPLAY_SET_DEST_RECT | OMX_DISPLAY_SET_LAYER;
+		display_region.fullscreen = OMX_FALSE;
+		display_region.noaspect = renderer->config->noaspect;
+		display_region.dest_rect.x_offset  = (int)renderer->config->ox;
+		display_region.dest_rect.y_offset  = (int)renderer->config->oy;
+		display_region.dest_rect.width     = (int)renderer->config->width;
+		display_region.dest_rect.height    = (int)renderer->config->height;
+    	display_region.layer = LAYER_VIDEO;
+	}
 
     if (OMX_SetConfig(ilclient_get_handle(renderer->video_renderer), OMX_IndexConfigDisplayRegion,
                       &display_region) != OMX_ErrorNone) {
-        logger_log(renderer->base.logger, LOGGER_DEBUG, "Could not set renderer to fullscreen");
+        logger_log(renderer->base.logger, LOGGER_DEBUG, "Could not set display_region");
         video_renderer_rpi_destroy_decoder(renderer);
         return -13;
     }
