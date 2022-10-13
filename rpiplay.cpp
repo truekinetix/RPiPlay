@@ -191,24 +191,24 @@ static audio_init_func_t find_audio_init_func(const char *name) {
 
 void print_info(char *name) {
     printf("RPiPlay %s: An open-source AirPlay mirroring server for Raspberry Pi\n", VERSION);
-    printf("\nUsage: %s [-n name] [-b (on|auto|off)] [-r (90|180|270)] [-l] [-a (hdmi|analog|off)] [-vr renderer] [-ar renderer]\n", name);
-    printf("\nOptions:\n");
-    printf(" -n name               Specify the network name of the AirPlay server\n");
-    printf(" -b (on|auto|off)      Show black background always, only during active connection, or never\n");
-    printf(" -r (90|180|270)       Specify image rotation in multiples of 90 degrees\n");
-    printf(" -f (horiz|vert|both)  Specify image flipping (horiz = horizontal, vert = vertical, both = both)\n");
-    printf(" -l                    Enable low-latency mode (disables render clock)\n");
-    printf(" -a (hdmi|analog|off)  Set audio output device\n");
-    printf(" -vr renderer          Set video renderer to use. Available renderers:\n");
+    printf("Usage: %s [-n name] [-b (on|auto|off)] [-r (90|180|270)] [-l] [-a (hdmi|analog|off)] [-vr renderer] [-ar renderer]\n", name);
+    printf("Options:\n");
+    printf("-n name               Specify the network name of the AirPlay server\n");
+    printf("-b (on|auto|off)      Show black background always, only during active connection, or never\n");
+    printf("-r (90|180|270)       Specify image rotation in multiples of 90 degrees\n");
+    printf("-f (horiz|vert|both)  Specify image flipping (horiz = horizontal, vert = vertical, both = both)\n");
+    printf("-l                    Enable low-latency mode (disables render clock)\n");
+    printf("-a (hdmi|analog|off)  Set audio output device\n");
+    printf("-vr renderer          Set video renderer to use. Available renderers:\n");
     for (int i = 0; i < sizeof(video_renderers)/sizeof(video_renderers[0]); i++) {
         printf("    %s: %s%s\n", video_renderers[i].name, video_renderers[i].description, i == 0 ? " [Default]" : "");
     }
-    printf(" -ar renderer          Set audio renderer to use. Available renderers:\n");
+    printf("-ar renderer          Set audio renderer to use. Available renderers:\n");
     for (int i = 0; i < sizeof(audio_renderers)/sizeof(audio_renderers[0]); i++) {
         printf("    %s: %s%s\n", audio_renderers[i].name, audio_renderers[i].description, i == 0 ? " [Default]" : "");
     }
-    printf(" -d                    Enable debug logging\n");
-    printf(" -v/-h                 Displays this help and version information\n");
+    printf("-d                    Enable debug logging\n");
+    printf("-v/-h                 Displays this help and version information\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -375,8 +375,6 @@ extern "C" void log_callback(void *cls, int level, const char *msg) {
 
 int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
                  video_renderer_config_t const *video_config, audio_renderer_config_t const *audio_config) {
-    LOGI("start_server()");
-
     raop_callbacks_t raop_cbs;
     memset(&raop_cbs, 0, sizeof(raop_cbs));
     raop_cbs.conn_init = conn_init;
@@ -415,14 +413,8 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
         return -1;
     }
 
-    if (video_renderer) {
-        LOGI("  Starting video renderer");
-        video_renderer->funcs->start(video_renderer);
-    }
-    if (audio_renderer) {
-        LOGI("  Starting audio renderer");
-        audio_renderer->funcs->start(audio_renderer);
-    }
+    if (video_renderer) video_renderer->funcs->start(video_renderer);
+    if (audio_renderer) audio_renderer->funcs->start(audio_renderer);
 
     unsigned short port = 0;
     raop_start(raop, &port);
@@ -440,31 +432,16 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
     dnssd_register_raop(dnssd, port);
     dnssd_register_airplay(dnssd, port + 1);
 
-    LOGI("start_Server(): Done");
-
     return 0;
 }
 
 int stop_server() {
-    LOGI("stop_server()");
-
     raop_destroy(raop);
     dnssd_unregister_raop(dnssd);
     dnssd_unregister_airplay(dnssd);
-
     // If we don't destroy these two in the correct order, we get a deadlock from the ilclient library
-    if (audio_renderer) {
-        LOGI("  Stopping audio renderer");
-        audio_renderer->funcs->destroy(audio_renderer);
-    }
-    if (video_renderer) {
-        LOGI("  Stopping video renderer");
-        video_renderer->funcs->destroy(video_renderer);
-    }
-
+    if (audio_renderer) audio_renderer->funcs->destroy(audio_renderer);
+    if (video_renderer) video_renderer->funcs->destroy(video_renderer);
     logger_destroy(render_logger);
-
-    LOGI("stop_server(): Done");
-
     return 0;
 }

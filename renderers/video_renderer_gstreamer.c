@@ -124,39 +124,12 @@ video_renderer_t *video_renderer_gstreamer_init(logger_t *logger, video_renderer
     return &renderer->base;
 }
 
-
-// mgtm
-#define PATH_FILE_VIDEO_OUT "/home/mal/gstreamer.out.h264"
-FILE *fileVideoOut;
-
-
-
 static void video_renderer_gstreamer_start(video_renderer_t *renderer) {
-
-
-// mgtm
-fileVideoOut = fopen(PATH_FILE_VIDEO_OUT,"wb");  // w for write, b for binary
-
-if ( !fileVideoOut ) {
-    printf("ERROR: Could not open video output file %s\n", PATH_FILE_VIDEO_OUT);
-}
-
     video_renderer_gstreamer_t *r = (video_renderer_gstreamer_t *)renderer;
     gst_element_set_state(r->pipeline, GST_STATE_PLAYING);
 }
 
 static void video_renderer_gstreamer_render_buffer(video_renderer_t *renderer, raop_ntp_t *ntp, unsigned char *data, int data_len, uint64_t pts, int type) {
-
-
-// mgtm - write buffer to a file
-int numWritten = fwrite( data, data_len, 1, fileVideoOut ); 
-if ( numWritten == 1 ) {
-    printf("Writing to video output file %s\n", PATH_FILE_VIDEO_OUT);
-} else {
-    printf("ERROR: Error writing to video output file %s\n", PATH_FILE_VIDEO_OUT);
-}
-
-
     video_renderer_gstreamer_t *r = (video_renderer_gstreamer_t *)renderer;
     GstBuffer *buffer;
 
@@ -171,20 +144,9 @@ if ( numWritten == 1 ) {
 
 void video_renderer_gstreamer_flush(video_renderer_t *renderer) {
 
-
-// mgtm
-int errFlush = fflush( fileVideoOut );
-if ( errFlush ) {
-    printf("ERROR: Could not flush video output file %s\n", PATH_FILE_VIDEO_OUT);
-}
-
-
 }
 
 void video_renderer_gstreamer_destroy(video_renderer_t *renderer) {
-
-fclose( fileVideoOut );
-
     video_renderer_gstreamer_t *r = (video_renderer_gstreamer_t *)renderer;
     gst_app_src_end_of_stream(GST_APP_SRC(r->appsrc));
     gst_element_set_state(r->pipeline, GST_STATE_NULL);
