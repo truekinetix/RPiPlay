@@ -56,16 +56,16 @@ FILE *write_ptr;
 #define PATH_FIFO "/home/truebike/rpiplay.fifo"
 int fdFifoWrite = -1;
 
+bool bMpvStarted = false;
 
 pid_t pidChild = 0;
 
+int startMpv( void );
 
 
 
 
 static void video_renderer_dummy_start(video_renderer_t *renderer) {
-
-
 	printf("video_renderer_dummy_start: INN\n" );
 
 
@@ -95,28 +95,50 @@ static void video_renderer_dummy_start(video_renderer_t *renderer) {
 		}
 
 
-	pidChild = fork();
-	if ( pidChild == 0 ) { // child
-		printf( "starting mpv\n" );
-		char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", "/home/truebike/rpiplay.fifo", NULL };
-		execv( "/usr/bin/mpv", args );
-		printf( "mpv returned\n" );
-		exit( 0 );
-	}
-
 	printf("video_renderer_dummy_start: started mpv, pid:%d\n", pidChild );
 
 	return;
 
 }
 
+
+static void video_renderer_dummy_conn_init(video_renderer_t *renderer) {
+
+	printf("video_renderer_dummy_conn_init(): INN\n" );
+
+	// start mpv to read the fifo when we get a connection
+	if ( !bMpvStarted ) {
+		if ( startMpv() == 0 ) {
+			bMpvStarted = true;
+		}
+	}	
+}
+
+
+int startMpv( void ) 
+{
+	int retError = 0;
+
+	pidChild = fork();
+	if ( pidChild == 0 ) {  // child
+		printf( "starting mpv\n" );
+		char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", "/home/truebike/rpiplay.fifo", NULL };
+		execv( "/usr/bin/mpv", args );
+		printf( "mpv returned\n" );
+		exit( 0 );
+	} else if ( pidChild < 0 ) {  // error
+		retError = -1;
+	}
+
+	return( retError );
+}
+
 static void video_renderer_dummy_render_buffer(video_renderer_t *renderer, raop_ntp_t *ntp, unsigned char *data, int data_len, uint64_t pts, int type) {
 
-
-static int iCount = 0;
-if ( iCount++ %100 == 0 ) {
-	printf( "video_renderer_dummy_render() %d\n", iCount);
-}
+	static int iCount = 0;
+	if ( iCount++ %100 == 0 ) {
+		printf( "video_renderer_dummy_render() %d\n", iCount);
+	}
 
 	if ( data ) {
 		//fwrite( data, data_len, 1, write_ptr ); // write all the data we get
@@ -129,17 +151,25 @@ static void video_renderer_dummy_flush(video_renderer_t *renderer) {
 	//fflush( write_ptr );
 }
 
+static void video_renderer_dummy_conn_destroy(video_renderer_t *renderer) {
+
+	printf("video_renderer_dummy_conn_destroy(): INN\n" );
+
+	// stop the video player
+	if ( pidChild != 0 ) { 
+		printf( "  stopping mpv, pid: %d()\n", pidChild );
+		
+		kill( pidChild, 9 ); 
+		pidChild = 0;
+	}
+
+	return;
+}
+
 static void video_renderer_dummy_destroy(video_renderer_t *renderer) {
 	printf( "video_renderer_dummy_destroy() INN\n" );
 
 	//fclose( write_ptr );
-
-// stop the video player
-if ( pidChild != 0 ) { 
-	printf( "  stopping mpv, pid: %d()\n", pidChild );
-	
-	kill( pidChild, 9 ); 
-}
 
     close( fdFifoWrite );
 
@@ -159,6 +189,8 @@ static const video_renderer_funcs_t video_renderer_dummy_funcs = {
     .flush = video_renderer_dummy_flush,
     .destroy = video_renderer_dummy_destroy,
     .update_background = video_renderer_dummy_update_background,
+	.conn_init = video_renderer_dummy_conn_init,
+	.conn_destroy = video_renderer_dummy_conn_destroy,
 };
 
 

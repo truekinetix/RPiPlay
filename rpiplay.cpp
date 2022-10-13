@@ -316,11 +316,17 @@ int main(int argc, char *argv[]) {
 
 // Server callbacks
 extern "C" void conn_init(void *cls) {
-    if (video_renderer) video_renderer->funcs->update_background(video_renderer, 1);
+    if (video_renderer) {
+        video_renderer->funcs->conn_init(video_renderer);
+        video_renderer->funcs->update_background(video_renderer, 1);
+    }
 }
 
 extern "C" void conn_destroy(void *cls) {
-    if (video_renderer) video_renderer->funcs->update_background(video_renderer, -1);
+    if (video_renderer) {
+        video_renderer->funcs->conn_destroy(video_renderer);
+        video_renderer->funcs->update_background(video_renderer, -1);
+    }
 }
 
 extern "C" void audio_process(void *cls, raop_ntp_t *ntp, aac_decode_struct *data) {
