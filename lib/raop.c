@@ -247,6 +247,10 @@ conn_destroy(void *ptr) {
     pairing_session_destroy(conn->pairing);
     fairplay_destroy(conn->fairplay);
     free(conn);
+
+    logger_log(conn->raop->logger, LOGGER_INFO, "Destroyed connection");
+
+    return;
 }
 
 raop_t *

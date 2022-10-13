@@ -253,25 +253,13 @@ static int video_renderer_rpi_init_decoder(video_renderer_rpi_t *renderer) {
     display_region.nSize = sizeof(OMX_CONFIG_DISPLAYREGIONTYPE);
     display_region.nVersion.nVersion = OMX_VERSION;
     display_region.nPortIndex = 90;
-
-	if ( renderer->config->fullscreen ) {
-		display_region.set = OMX_DISPLAY_SET_FULLSCREEN | OMX_DISPLAY_SET_LAYER;
-		display_region.fullscreen = OMX_TRUE;
-		display_region.layer = LAYER_VIDEO;
-	} else {
-		display_region.set = OMX_DISPLAY_SET_FULLSCREEN | OMX_DISPLAY_SET_NOASPECT | OMX_DISPLAY_SET_DEST_RECT | OMX_DISPLAY_SET_LAYER;
-		display_region.fullscreen = OMX_FALSE;
-		display_region.noaspect = renderer->config->noaspect;
-		display_region.dest_rect.x_offset  = renderer->config->ox;
-		display_region.dest_rect.y_offset  = renderer->config->oy;
-		display_region.dest_rect.width     = renderer->config->width;
-		display_region.dest_rect.height    = renderer->config->height;
-    	display_region.layer = LAYER_VIDEO;
-	}
+    display_region.set = OMX_DISPLAY_SET_FULLSCREEN | OMX_DISPLAY_SET_LAYER;
+    display_region.fullscreen = OMX_TRUE;
+    display_region.layer = LAYER_VIDEO;
 
     if (OMX_SetConfig(ilclient_get_handle(renderer->video_renderer), OMX_IndexConfigDisplayRegion,
                       &display_region) != OMX_ErrorNone) {
-        logger_log(renderer->base.logger, LOGGER_DEBUG, "Could not set display_region");
+        logger_log(renderer->base.logger, LOGGER_DEBUG, "Could not set renderer to fullscreen");
         video_renderer_rpi_destroy_decoder(renderer);
         return -13;
     }
@@ -390,7 +378,23 @@ COMPONENT_T *video_renderer_rpi_get_clock(video_renderer_rpi_t *renderer) {
     return renderer->clock;
 }
 
+
+// mgtm
+//#define PATH_FILE_VIDEO_OUT "/home/mal/rpi.out.h264"
+//FILE *fileVideoOut;
+
+
 static void video_renderer_rpi_start(video_renderer_t *renderer) {
+
+/*
+// mgtm
+fileVideoOut = fopen(PATH_FILE_VIDEO_OUT,"wb");  // w for write, b for binary
+
+if ( !fileVideoOut ) {
+    printf("ERROR: Could not open video output file %s\n", PATH_FILE_VIDEO_OUT);
+}
+*/
+
     video_renderer_rpi_t *r = (video_renderer_rpi_t *)renderer;
     ilclient_change_component_state(r->clock, OMX_StateExecuting);
     ilclient_change_component_state(r->video_decoder, OMX_StateExecuting);
@@ -461,6 +465,17 @@ static void video_renderer_rpi_render_buffer(video_renderer_t *renderer, raop_nt
         ilclient_change_component_state(r->video_renderer, OMX_StateExecuting);
     }
 
+
+/*
+// mgtm - write modified data to a file
+int numWritten = fwrite( data, data_len, 1, fileVideoOut ); 
+if ( numWritten == 1 ) {
+    printf("Writing to video output file %s\n", PATH_FILE_VIDEO_OUT);
+} else {
+    printf("ERROR: Error writing to video output file %s\n", PATH_FILE_VIDEO_OUT);
+}
+*/
+
     int offset = 0;
     while (offset < data_len) {
         OMX_BUFFERHEADERTYPE *buffer = ilclient_get_input_buffer(r->video_decoder, 130, 0);
@@ -508,6 +523,15 @@ static void video_renderer_rpi_render_buffer(video_renderer_t *renderer, raop_nt
 }
 
 static void video_renderer_rpi_flush(video_renderer_t *renderer) {
+
+/*
+// mgtm
+int errFlush = fflush( fileVideoOut );
+if ( errFlush ) {
+    printf("ERROR: Could not flush video output file %s\n", PATH_FILE_VIDEO_OUT);
+}
+*/
+
     video_renderer_rpi_t *r = (video_renderer_rpi_t *)renderer;
     OMX_BUFFERHEADERTYPE *buffer = ilclient_get_input_buffer(r->video_decoder, 130, 1);
     if (buffer == NULL) logger_log(renderer->logger, LOGGER_ERR, "Got NULL buffer while flushing!");
@@ -529,13 +553,24 @@ static void video_renderer_rpi_flush(video_renderer_t *renderer) {
 }
 
 static void video_renderer_rpi_destroy(video_renderer_t *renderer) {
+
+
+// mgtm
+// fclose( fileVideoOut );
+
     video_renderer_rpi_t *r = (video_renderer_rpi_t *)renderer;
     if (renderer) {
+
+        logger_log(renderer->logger, LOGGER_ERR, "video_renderer_rpi_destroy()");
+
+
         // Only flush if data was sent through, gets stuck otherwise
         if (r->first_packet_time) video_renderer_rpi_flush(renderer);
         video_renderer_rpi_destroy_decoder(r);
         free(renderer);
     }
+
+    printf( "video_renderer_rpi_destroy() Done\n" );
 }
 
 static const video_renderer_funcs_t video_renderer_rpi_funcs = {

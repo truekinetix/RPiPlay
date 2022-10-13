@@ -26,6 +26,13 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+
 typedef struct video_renderer_dummy_s {
     video_renderer_t base;
 } video_renderer_dummy_t;
@@ -44,16 +51,53 @@ video_renderer_t *video_renderer_dummy_init(logger_t *logger, video_renderer_con
     return &renderer->base;
 }
 
+
+// mgtm
+FILE *write_ptr;
+
+#define PATH_FIFO "/home/truebike/rpiplay.fifo"
+int fdFifoWrite = -1;
+
+
+
+
+
+
+
 static void video_renderer_dummy_start(video_renderer_t *renderer) {
+	// mgtm
+	write_ptr = fopen("/home/truebike/dummy.out.h264","ab+");  // w for write, b for binary
+
+	if ( !write_ptr ) {
+		printf( "could not open stream output file\n" );
+	}
+
+    unlink( PATH_FIFO );
+
+    mknod(PATH_FIFO, S_IFIFO | 0640, 0);
+
+    fdFifoWrite = open(PATH_FIFO, O_CREAT|O_WRONLY);
+
+
 }
 
 static void video_renderer_dummy_render_buffer(video_renderer_t *renderer, raop_ntp_t *ntp, unsigned char *data, int data_len, uint64_t pts, int type) {
+	if ( data ) {
+		fwrite( data, data_len, 1, write_ptr ); // write all the data we get
+
+        write( fdFifoWrite, data, data_len );
+	}
 }
 
 static void video_renderer_dummy_flush(video_renderer_t *renderer) {
+	fflush( write_ptr );
 }
 
 static void video_renderer_dummy_destroy(video_renderer_t *renderer) {
+	fclose( write_ptr );
+
+    close( fdFifoWrite );
+
     if (renderer) {
         free(renderer);
     }
@@ -70,3 +114,14 @@ static const video_renderer_funcs_t video_renderer_dummy_funcs = {
     .destroy = video_renderer_dummy_destroy,
     .update_background = video_renderer_dummy_update_background,
 };
+
+
+
+
+
+
+
+
+
+
+

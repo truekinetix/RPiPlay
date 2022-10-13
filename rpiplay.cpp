@@ -25,6 +25,14 @@
 #include <vector>
 #include <fstream>
 
+#include <sys/socket.h>
+#include <ifaddrs.h>
+#ifdef __linux__
+#include <netpacket/packet.h>
+#else
+#include <net/if_dl.h>   /* macOS and *BSD */
+#endif
+
 #include "log.h"
 #include "lib/raop.h"
 #include "lib/stream.h"
@@ -123,16 +131,43 @@ static int parse_hw_addr(std::string str, std::vector<char> &hw_addr) {
     return 0;
 }
 
-std::string find_mac() {
-    std::ifstream iface_stream("/sys/class/net/eth0/address");
-    if (!iface_stream) {
-        iface_stream.open("/sys/class/net/wlan0/address");
+static std::string find_mac () {
+/*  finds the MAC address of the first active network interface *
+ *  in a Linux, *BSD or macOS system.                           */
+    std::string mac_address = "";
+    struct ifaddrs *ifap, *ifaptr;
+    int non_null_octets = 0;
+    unsigned char octet[6], *ptr;
+    if (getifaddrs(&ifap) == 0) {
+        for(ifaptr = ifap; ifaptr != NULL; ifaptr = ifaptr->ifa_next) {
+            if(ifaptr->ifa_addr == NULL) continue;
+#ifdef __linux__
+            if (ifaptr->ifa_addr->sa_family != AF_PACKET) continue;
+            struct sockaddr_ll *s = (struct sockaddr_ll*) ifaptr->ifa_addr;
+            for (int i = 0; i < 6; i++) {
+                if ((octet[i] = s->sll_addr[i]) != 0) non_null_octets++;
+            }
+#else    /* macOS and *BSD */
+            if (ifaptr->ifa_addr->sa_family != AF_LINK) continue;
+            ptr = (unsigned char *) LLADDR((struct sockaddr_dl *) ifaptr->ifa_addr);
+            for (int i= 0; i < 6 ; i++) {
+                if ((octet[i] = *ptr) != 0) non_null_octets++;
+                ptr++;
+            }
+#endif
+            if (non_null_octets) {
+                mac_address.erase();
+                char str[3];
+                for (int i = 0; i < 6 ; i++) {
+                    sprintf(str,"%02x", octet[i]);
+                    mac_address = mac_address + str;
+                    if (i < 5) mac_address = mac_address + ":";
+                }
+                break;
+            }
+        }
     }
-    if (!iface_stream) return "";
-
-    std::string mac_address;
-    iface_stream >> mac_address;
-    iface_stream.close();
+    freeifaddrs(ifap);
     return mac_address;
 }
 
@@ -156,24 +191,24 @@ static audio_init_func_t find_audio_init_func(const char *name) {
 
 void print_info(char *name) {
     printf("RPiPlay %s: An open-source AirPlay mirroring server for Raspberry Pi\n", VERSION);
-    printf("Usage: %s [-n name] [-b (on|auto|off)] [-r (90|180|270)] [-l] [-a (hdmi|analog|off)] [-vr renderer] [-ar renderer]\n", name);
-    printf("Options:\n");
-    printf("-n name               Specify the network name of the AirPlay server\n");
-    printf("-b (on|auto|off)      Show black background always, only during active connection, or never\n");
-    printf("-r (90|180|270)       Specify image rotation in multiples of 90 degrees\n");
-    printf("-f (horiz|vert|both)  Specify image flipping (horiz = horizontal, vert = vertical, both = both)\n");
-    printf("-l                    Enable low-latency mode (disables render clock)\n");
-    printf("-a (hdmi|analog|off)  Set audio output device\n");
-    printf("-vr renderer          Set video renderer to use. Available renderers:\n");
+    printf("\nUsage: %s [-n name] [-b (on|auto|off)] [-r (90|180|270)] [-l] [-a (hdmi|analog|off)] [-vr renderer] [-ar renderer]\n", name);
+    printf("\nOptions:\n");
+    printf(" -n name               Specify the network name of the AirPlay server\n");
+    printf(" -b (on|auto|off)      Show black background always, only during active connection, or never\n");
+    printf(" -r (90|180|270)       Specify image rotation in multiples of 90 degrees\n");
+    printf(" -f (horiz|vert|both)  Specify image flipping (horiz = horizontal, vert = vertical, both = both)\n");
+    printf(" -l                    Enable low-latency mode (disables render clock)\n");
+    printf(" -a (hdmi|analog|off)  Set audio output device\n");
+    printf(" -vr renderer          Set video renderer to use. Available renderers:\n");
     for (int i = 0; i < sizeof(video_renderers)/sizeof(video_renderers[0]); i++) {
         printf("    %s: %s%s\n", video_renderers[i].name, video_renderers[i].description, i == 0 ? " [Default]" : "");
     }
-    printf("-ar renderer          Set audio renderer to use. Available renderers:\n");
+    printf(" -ar renderer          Set audio renderer to use. Available renderers:\n");
     for (int i = 0; i < sizeof(audio_renderers)/sizeof(audio_renderers[0]); i++) {
         printf("    %s: %s%s\n", audio_renderers[i].name, audio_renderers[i].description, i == 0 ? " [Default]" : "");
     }
-    printf("-d                    Enable debug logging\n");
-    printf("-v/-h                 Displays this help and version information\n");
+    printf(" -d                    Enable debug logging\n");
+    printf(" -v/-h                 Displays this help and version information\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -189,13 +224,6 @@ int main(int argc, char *argv[]) {
     video_config.rotation = DEFAULT_ROTATE;
     video_config.flip = DEFAULT_FLIP;
     
-	video_config.fullscreen = true;
-	video_config.ox = 0;
-	video_config.oy = 0;
-	video_config.width = 0;
-	video_config.height = 0;
-	video_config.noaspect = true;
-
     audio_renderer_config_t audio_config;
     audio_config.device = DEFAULT_AUDIO_DEVICE;
     audio_config.low_latency = DEFAULT_LOW_LATENCY;
@@ -261,44 +289,6 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "Error: Unable to locate audio renderer \"%s\".\n", argv[i]);
                 exit(1);
             }
-        } else if (arg == "-ox") {
-            if (i == argc - 1) {
-				fprintf(stderr, "Error: You must supply the x offset of the window in pixels after the -ox argument.\n");
-                exit(1);		
-			}	
-			video_config.ox = atoi( argv[++i] );
-			video_config.fullscreen = false;  // setting ox turns fullscreen off
-        } else if (arg == "-oy") {
-            if (i == argc - 1) {
-				fprintf(stderr, "Error: You must supply the y offset of the window in pixels after the -oy argument.\n");
-                exit(1);		
-			}	
-			video_config.oy = atoi( argv[++i] );
-			video_config.fullscreen = false;  // setting oy turns fullscreen off
-        } else if (arg == "-width") {
-            if (i == argc - 1) {
-				fprintf(stderr, "Error: You must supply the width of the window in pixels after the -width argument.\n");
-                exit(1);		
-			}	
-			video_config.width = atoi( argv[++i] );	
-			video_config.fullscreen = false;  // setting width turns fullscreen off
-        } else if (arg == "-height") {
-            if (i == argc - 1) {
-				fprintf(stderr, "Error: You must supply the height of the window in pixels after the -height argument.\n");
-                exit(1);		
-			}	
-			video_config.height = atoi( argv[++i] );	
-			video_config.fullscreen = false;  // setting height turns fullscreen off
-        } else if (arg == "-noaspect") {
-            if (i == argc - 1) {
-				fprintf(stderr, "Error: You must supply the noaspect flag ( 0 = false ) after the -noaspect argument.\n");
-                exit(1);		
-			}	
-			int intNoaspect = atoi( argv[++i] );
-			video_config.noaspect = ( intNoaspect == 0 ) ? false : true;
-			if ( video_config.noaspect ) {
-				video_config.fullscreen = false;  // setting noaspect true turns fullscreen off
-			}
         } else if (arg == "-h" || arg == "-v") {
             print_info(argv[0]);
             exit(0);
@@ -385,6 +375,8 @@ extern "C" void log_callback(void *cls, int level, const char *msg) {
 
 int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
                  video_renderer_config_t const *video_config, audio_renderer_config_t const *audio_config) {
+    LOGI("start_server()");
+
     raop_callbacks_t raop_cbs;
     memset(&raop_cbs, 0, sizeof(raop_cbs));
     raop_cbs.conn_init = conn_init;
@@ -423,8 +415,14 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
         return -1;
     }
 
-    if (video_renderer) video_renderer->funcs->start(video_renderer);
-    if (audio_renderer) audio_renderer->funcs->start(audio_renderer);
+    if (video_renderer) {
+        LOGI("  Starting video renderer");
+        video_renderer->funcs->start(video_renderer);
+    }
+    if (audio_renderer) {
+        LOGI("  Starting audio renderer");
+        audio_renderer->funcs->start(audio_renderer);
+    }
 
     unsigned short port = 0;
     raop_start(raop, &port);
@@ -442,16 +440,31 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
     dnssd_register_raop(dnssd, port);
     dnssd_register_airplay(dnssd, port + 1);
 
+    LOGI("start_Server(): Done");
+
     return 0;
 }
 
 int stop_server() {
+    LOGI("stop_server()");
+
     raop_destroy(raop);
     dnssd_unregister_raop(dnssd);
     dnssd_unregister_airplay(dnssd);
+
     // If we don't destroy these two in the correct order, we get a deadlock from the ilclient library
-    if (audio_renderer) audio_renderer->funcs->destroy(audio_renderer);
-    if (video_renderer) video_renderer->funcs->destroy(video_renderer);
+    if (audio_renderer) {
+        LOGI("  Stopping audio renderer");
+        audio_renderer->funcs->destroy(audio_renderer);
+    }
+    if (video_renderer) {
+        LOGI("  Stopping video renderer");
+        video_renderer->funcs->destroy(video_renderer);
+    }
+
     logger_destroy(render_logger);
+
+    LOGI("stop_server(): Done");
+
     return 0;
 }
