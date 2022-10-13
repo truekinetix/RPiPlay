@@ -140,13 +140,7 @@ raop_rtp_init_mirror_aes(raop_rtp_mirror_t *raop_rtp_mirror, uint64_t streamConn
     mirror_buffer_init_aes(raop_rtp_mirror->buffer, streamConnectionID);
 }
 
-
-
-// mgtm
-#define DUMP_H264
-
-
-
+//#define DUMP_H264
 
 #define RAOP_PACKET_LEN 32768
 /**
@@ -166,10 +160,10 @@ raop_rtp_mirror_thread(void *arg)
 
 #ifdef DUMP_H264
     // C decrypted
-    FILE* file = fopen("/home/mal/Airplay.h264", "wb");
+    FILE* file = fopen("/home/pi/Airplay.h264", "wb");
     // Encrypted source file
-    FILE* file_source = fopen("/home/mal/Airplay.source", "wb");
-    FILE* file_len = fopen("/home/mal/Airplay.len", "wb");
+    FILE* file_source = fopen("/home/pi/Airplay.source", "wb");
+    FILE* file_len = fopen("/home/pi/Airplay.len", "wb");
 #endif
 
     while (1) {

@@ -315,7 +315,7 @@ static void audio_renderer_rpi_render_buffer(audio_renderer_t *renderer, raop_nt
 
 #ifdef DUMP_AUDIO
     if (file_pcm == NULL) {
-        file_pcm = fopen("/home/mal/Airplay.pcm", "wb");
+        file_pcm = fopen("/home/pi/Airplay.pcm", "wb");
     }
 
     fwrite(p_time_data, time_data_size, 1, file_pcm);

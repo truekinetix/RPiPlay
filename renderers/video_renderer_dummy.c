@@ -17,21 +17,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+
 #include "video_renderer.h"
 
-#include <stdlib.h>
 #include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <stdbool.h>
-#include <unistd.h>
-
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
 
 typedef struct video_renderer_dummy_s {
     video_renderer_t base;
@@ -59,48 +57,96 @@ FILE *write_ptr;
 int fdFifoWrite = -1;
 
 
+pid_t pidChild = 0;
 
 
 
 
 
 static void video_renderer_dummy_start(video_renderer_t *renderer) {
+
+
+	printf("video_renderer_dummy_start: INN\n" );
+
+
+
 	// mgtm
+/*
 	write_ptr = fopen("/home/truebike/dummy.out.h264","ab+");  // w for write, b for binary
 
 	if ( !write_ptr ) {
 		printf( "could not open stream output file\n" );
 	}
+*/
 
     unlink( PATH_FIFO );
 
-    mknod(PATH_FIFO, S_IFIFO | 0640, 0);
+	printf( "unlinked\n");
 
-    fdFifoWrite = open(PATH_FIFO, O_CREAT|O_WRONLY);
+    mkfifo(PATH_FIFO, S_IFIFO | 0777);
+	printf( "mkfifoed\n");
 
+    fdFifoWrite = open(PATH_FIFO, O_RDWR);
+	if ( fdFifoWrite )
+		 printf( "open stream fifo\n" );
+	else
+		{
+		printf( "ERROR: could not open fifo\n" );
+		}
+
+
+	pidChild = fork();
+	if ( pidChild == 0 ) { // child
+		printf( "starting mpv\n" );
+		char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", "/home/truebike/rpiplay.fifo", NULL };
+		execv( "/usr/bin/mpv", args );
+		printf( "mpv returned\n" );
+		exit( 0 );
+	}
+
+	printf("video_renderer_dummy_start: started mpv, pid:%d\n", pidChild );
+
+	return;
 
 }
 
 static void video_renderer_dummy_render_buffer(video_renderer_t *renderer, raop_ntp_t *ntp, unsigned char *data, int data_len, uint64_t pts, int type) {
-	if ( data ) {
-		fwrite( data, data_len, 1, write_ptr ); // write all the data we get
 
-        write( fdFifoWrite, data, data_len );
+
+static int iCount = 0;
+if ( iCount++ %100 == 0 ) {
+	printf( "video_renderer_dummy_render() %d\n", iCount);
+}
+
+	if ( data ) {
+		//fwrite( data, data_len, 1, write_ptr ); // write all the data we get
+
+        	write( fdFifoWrite, data, data_len );
 	}
 }
 
 static void video_renderer_dummy_flush(video_renderer_t *renderer) {
-	fflush( write_ptr );
+	//fflush( write_ptr );
 }
 
 static void video_renderer_dummy_destroy(video_renderer_t *renderer) {
-	fclose( write_ptr );
+	printf( "video_renderer_dummy_destroy() INN\n" );
+
+	//fclose( write_ptr );
+
+// stop the video player
+if ( pidChild != 0 ) { 
+	printf( "  stopping mpv, pid: %d()\n", pidChild );
+	
+	kill( pidChild, 9 ); 
+}
 
     close( fdFifoWrite );
 
     if (renderer) {
         free(renderer);
     }
+	printf( "video_renderer_dummy_destroy() Done\n" );
 }
 
 static void video_renderer_dummy_update_background(video_renderer_t *renderer, int type) {

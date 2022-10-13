@@ -161,9 +161,9 @@ raop_buffer_decrypt(raop_buffer_t *raop_buffer, unsigned char *data, unsigned ch
     int encryptedlen;
 #ifdef DUMP_AUDIO
     if (file_aac == NULL) {
-        file_aac = fopen("/home/mal/Airplay.aac", "wb");
-        file_source = fopen("/home/mal/Airplay.source", "wb");
-        file_keyiv = fopen("/home/mal/Airplay.keyiv", "wb");
+        file_aac = fopen("/home/pi/Airplay.aac", "wb");
+        file_source = fopen("/home/pi/Airplay.source", "wb");
+        file_keyiv = fopen("/home/pi/Airplay.keyiv", "wb");
     }
     // Undecrypted file
     if (file_source != NULL) {
