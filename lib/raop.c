@@ -199,15 +199,17 @@ conn_request(void *ptr, http_request_t *request, http_response_t **response) {
         //http_response_add_header(*response, "Connection", "close");
         if (conn->raop_rtp != NULL && raop_rtp_is_running(conn->raop_rtp)) {
             /* Destroy our RTP session */
-        	logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP destroy our RTP session");
+        	logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP destroying our RTP session");
             raop_rtp_stop(conn->raop_rtp);
+        	logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP destroyed our RTP session");
         } else if (conn->raop_rtp_mirror) {
             /* Destroy our sessions */
-        	logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP destroy our sessions");
+        	logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP destroying our sessions");
             raop_rtp_destroy(conn->raop_rtp);
             conn->raop_rtp = NULL;
             raop_rtp_mirror_destroy(conn->raop_rtp_mirror);
             conn->raop_rtp_mirror = NULL;
+        	logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP destroyed our sessions");
         }
         logger_log(conn->raop->logger, LOGGER_WARNING, "RAOP teardown done");
     }

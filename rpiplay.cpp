@@ -309,6 +309,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    LOGI("Running...");
     running = true;
     while (running) {
         sleep(1);
@@ -316,6 +317,10 @@ int main(int argc, char *argv[]) {
 
     LOGI("Stopping...");
     stop_server();
+
+    LOGI("Done.");
+
+    exit(0);
 }
 
 // Server callbacks
