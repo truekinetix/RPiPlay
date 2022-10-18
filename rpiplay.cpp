@@ -120,13 +120,12 @@ static void signal_handler(int sig) {
 }
 
 static void init_signals(void) {
-    struct sigaction sigact;
-
-    sigact.sa_handler = signal_handler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, NULL);
-    sigaction(SIGTERM, &sigact, NULL);
+    //struct sigaction sigact;
+    //sigact.sa_handler = signal_handler;
+    //sigemptyset(&sigact.sa_mask);
+    //sigact.sa_flags = 0;
+    //sigaction(SIGINT, &sigact, NULL);
+    //sigaction(SIGTERM, &sigact, NULL);
 }
 
 static int parse_hw_addr(std::string str, std::vector<char> &hw_addr) {
