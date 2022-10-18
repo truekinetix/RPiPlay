@@ -49,6 +49,10 @@ video_renderer_t *video_renderer_dummy_init(logger_t *logger, video_renderer_con
     renderer->base.logger = logger;
     renderer->base.funcs = &video_renderer_dummy_funcs;
     renderer->base.type = VIDEO_RENDERER_DUMMY;
+
+
+    logger_log(( (video_renderer_dummy_t *)renderer )->base.logger, LOGGER_DEBUG, "video_renderer_dummy_init(): INN");
+
     return &renderer->base;
 }
 
@@ -180,7 +184,7 @@ static void video_renderer_dummy_conn_destroy(video_renderer_t *renderer) {
 		bMpvStarted = false;
 	}
 
-	printf("video_renderer_dummy_conn_destroy(): done\n" );
+	printf("video_renderer_dummy_conn_destroy(): OUT\n" );
 
 	return;
 }
