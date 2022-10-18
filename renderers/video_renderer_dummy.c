@@ -121,7 +121,7 @@ static void video_renderer_dummy_conn_init(video_renderer_t *renderer) {
 
 	// start mpv to read the fifo when we get a connection
 	if ( !bMpvStarted ) {
-//		if ( startMpv() == 0 )
+		if ( startMpv() == 0 )
 		 {
 			bMpvStarted = true;
 		}
@@ -139,8 +139,10 @@ int startMpv( void )
 
 		//char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", PATH_FIFO, NULL };
 		//execv( "/usr/bin/mpv", args );
-		char* const args[] = { "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", "-fps", "25", "-cache", "1024", "-vf", "expand=::::::32", "/home/truebike/rpiplay.fifo", NULL };
-		execv( "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", args );
+		//char* const args[] = { "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", "-fps", "25", "-cache", "1024", "-vf", "expand=::::::32", "/home/truebike/rpiplay.fifo", NULL };
+		//execv( "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", args );
+		execv( "/home/truebike/runvideoplayer.sh" );
+		
 
 		printf( "mplayer returned\n" );
 
