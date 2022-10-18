@@ -76,7 +76,7 @@ int startMpv( void );
 static void video_renderer_dummy_start(video_renderer_t *renderer) {
 	printf("video_renderer_dummy_start: INN\n" );
 
-
+    logger_log(( (video_renderer_dummy_t *)renderer )->base.logger, LOGGER_DEBUG, "video_renderer_dummy_start(): INN");
 
 	// mgtm
 /*
@@ -102,7 +102,9 @@ static void video_renderer_dummy_start(video_renderer_t *renderer) {
 		}
 
 
-	printf("video_renderer_dummy_start: started mplayer, pid:%d\n", pidChild );
+//	printf("video_renderer_dummy_start: started mplayer, pid:%d\n", pidChild );
+
+    logger_log(( (video_renderer_dummy_t *)renderer )->base.logger, LOGGER_DEBUG, "video_renderer_dummy_start(): OUT: pidChilde:%d", pidChild);
 
 	return;
 
