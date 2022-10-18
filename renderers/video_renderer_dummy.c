@@ -121,7 +121,7 @@ static void video_renderer_dummy_conn_init(video_renderer_t *renderer) {
 
 	// start mpv to read the fifo when we get a connection
 	if ( !bMpvStarted ) {
-		if ( startMpv() == 0 )
+//		if ( startMpv() == 0 )
 		 {
 			bMpvStarted = true;
 		}
