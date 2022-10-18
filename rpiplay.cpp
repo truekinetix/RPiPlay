@@ -43,7 +43,12 @@
 
 #define VERSION "1.2"
 
-#define DEFAULT_NAME "RPiPlay"
+#if defined(__x86_64__)
+    #define DEFAULT_NAME "RPiPlayPC"
+#else
+    #define DEFAULT_NAME "RPiPlayNOTPC"
+#endif 
+
 #define DEFAULT_BACKGROUND_MODE BACKGROUND_MODE_ON
 #define DEFAULT_AUDIO_DEVICE AUDIO_DEVICE_HDMI
 #define DEFAULT_LOW_LATENCY false
@@ -316,6 +321,8 @@ int main(int argc, char *argv[]) {
 
 // Server callbacks
 extern "C" void conn_init(void *cls) {
+    LOGI("conn_init");
+
     if (video_renderer) {
         video_renderer->funcs->conn_init(video_renderer);
         video_renderer->funcs->update_background(video_renderer, 1);
@@ -323,6 +330,8 @@ extern "C" void conn_init(void *cls) {
 }
 
 extern "C" void conn_destroy(void *cls) {
+    LOGI("conn_destroy");
+
     if (video_renderer) {
         video_renderer->funcs->conn_destroy(video_renderer);
         video_renderer->funcs->update_background(video_renderer, -1);

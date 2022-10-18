@@ -24,12 +24,15 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+
 
 typedef struct video_renderer_dummy_s {
     video_renderer_t base;
@@ -53,7 +56,12 @@ video_renderer_t *video_renderer_dummy_init(logger_t *logger, video_renderer_con
 // mgtm
 FILE *write_ptr;
 
-#define PATH_FIFO "/home/truebike/rpiplay.fifo"
+#if defined(__x86_64__)
+	#define PATH_FIFO "/home/mal/rpiplay.fifo"
+#else
+	#define PATH_FIFO "/home/truebike/rpiplay.fifo"
+#endif  // __x86_64__
+
 int fdFifoWrite = -1;
 
 bool bMpvStarted = false;
@@ -123,12 +131,13 @@ int startMpv( void )
 	if ( pidChild == 0 ) {  // child
 		printf( "starting mplayer\n" );
 
-		//char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", "/home/truebike/rpiplay.fifo", NULL };
+		//char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", PATH_FIFO, NULL };
 		//execv( "/usr/bin/mpv", args );
 		char* const args[] = { "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", "-fps", "25", "-cache", "1024", "-vf", "expand=::::::32", "/home/truebike/rpiplay.fifo", NULL };
 		execv( "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", args );
 
 		printf( "mplayer returned\n" );
+
 		exit( 0 );
 	} else if ( pidChild < 0 ) {  // error
 		retError = -1;
