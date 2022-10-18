@@ -58,7 +58,7 @@ int fdFifoWrite = -1;
 
 bool bMpvStarted = false;
 
-pid_t pidChild = 0;
+pid_t pidChild = -1;
 
 int startMpv( void );
 
@@ -87,15 +87,14 @@ static void video_renderer_dummy_start(video_renderer_t *renderer) {
 	printf( "mkfifoed\n");
 
     fdFifoWrite = open(PATH_FIFO, O_RDWR);
-	if ( fdFifoWrite )
+	if ( fdFifoWrite ) {
 		 printf( "open stream fifo\n" );
-	else
-		{
+	} else {
 		printf( "ERROR: could not open fifo\n" );
 		}
 
 
-	printf("video_renderer_dummy_start: started mpv, pid:%d\n", pidChild );
+	printf("video_renderer_dummy_start: started mplayer, pid:%d\n", pidChild );
 
 	return;
 
@@ -108,7 +107,8 @@ static void video_renderer_dummy_conn_init(video_renderer_t *renderer) {
 
 	// start mpv to read the fifo when we get a connection
 	if ( !bMpvStarted ) {
-		if ( startMpv() == 0 ) {
+		if ( startMpv() == 0 )
+		 {
 			bMpvStarted = true;
 		}
 	}	
@@ -121,10 +121,14 @@ int startMpv( void )
 
 	pidChild = fork();
 	if ( pidChild == 0 ) {  // child
-		printf( "starting mpv\n" );
-		char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", "/home/truebike/rpiplay.fifo", NULL };
-		execv( "/usr/bin/mpv", args );
-		printf( "mpv returned\n" );
+		printf( "starting mplayer\n" );
+
+		//char* const args[] = { "/usr/bin/mpv", "-geometry", "580x320+20+20", "/home/truebike/rpiplay.fifo", NULL };
+		//execv( "/usr/bin/mpv", args );
+		char* const args[] = { "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", "-fps", "25", "-cache", "1024", "-vf", "expand=::::::32", "/home/truebike/rpiplay.fifo", NULL };
+		execv( "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", args );
+
+		printf( "mplayer returned\n" );
 		exit( 0 );
 	} else if ( pidChild < 0 ) {  // error
 		retError = -1;
@@ -157,11 +161,15 @@ static void video_renderer_dummy_conn_destroy(video_renderer_t *renderer) {
 
 	// stop the video player
 	if ( pidChild != 0 ) { 
-		printf( "  stopping mpv, pid: %d()\n", pidChild );
+		printf( "  stopping mplayer, pid: %d()\n", pidChild );
 		
 		kill( pidChild, 9 ); 
 		pidChild = 0;
+
+		bMpvStarted = false;
 	}
+
+	printf("video_renderer_dummy_conn_destroy(): done\n" );
 
 	return;
 }
@@ -192,14 +200,4 @@ static const video_renderer_funcs_t video_renderer_dummy_funcs = {
 	.conn_init = video_renderer_dummy_conn_init,
 	.conn_destroy = video_renderer_dummy_conn_destroy,
 };
-
-
-
-
-
-
-
-
-
-
 
