@@ -106,8 +106,6 @@ static void video_renderer_dummy_start(video_renderer_t *renderer) {
 		}
 
 
-//	printf("video_renderer_dummy_start: started mplayer, pid:%d\n", pidChild );
-
     logger_log(( (video_renderer_dummy_t *)renderer )->base.logger, LOGGER_DEBUG, "video_renderer_dummy_start(): OUT: pidChilde:%d", pidChild);
 
 	return;
@@ -117,16 +115,16 @@ static void video_renderer_dummy_start(video_renderer_t *renderer) {
 
 static void video_renderer_dummy_conn_init(video_renderer_t *renderer) {
 
-	printf("video_renderer_dummy_conn_init(): INN\n" );
+	printf("video_renderer_dummy_conn_init(): INN, starting video\n" );
 
 	// start mpv to read the fifo when we get a connection
 	if ( !bMpvStarted ) {
 		if ( startMpv() == 0 )
-		 {
+			{
 			bMpvStarted = true;
-		}
-	}	
-}
+			}
+		}	
+	}
 
 
 int startMpv( void ) 
@@ -141,7 +139,9 @@ int startMpv( void )
 		//execv( "/usr/bin/mpv", args );
 		//char* const args[] = { "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", "-fps", "25", "-cache", "1024", "-vf", "expand=::::::32", "/home/truebike/rpiplay.fifo", NULL };
 		//execv( "/home/truebike/Downloads/MPlayer-1.3.0/mplayer", args );
-		execv( "/home/truebike/runvideoplayer.sh" );
+
+		char* const args[] = { "/home/truebike/runvideoplayer", NULL };
+		execv( "/home/truebike/runvideoplayer.sh", args );
 		
 
 		printf( "mplayer returned\n" );
