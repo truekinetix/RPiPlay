@@ -157,6 +157,9 @@ int startMpv( void )
 static void video_renderer_dummy_render_buffer(video_renderer_t *renderer, raop_ntp_t *ntp, unsigned char *data, int data_len, uint64_t pts, int type) {
 
 	static int iCount = 0;
+	if ( iCount++ %5 == 0 ) {
+		printf( "." );
+	}
 	if ( iCount++ %100 == 0 ) {
 		printf( "video_renderer_dummy_render() %d\n", iCount);
 	}
